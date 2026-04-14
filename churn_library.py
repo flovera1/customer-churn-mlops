@@ -14,6 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 
+from sklearn.metrics import roc_curve, auc
 logging.basicConfig(
     filename='./logs/churn_library.log',
     level=logging.INFO,
@@ -165,6 +166,7 @@ def feature_importance_plot(model, X_data, output_pth):
 
     logging.info("Feature importance saved")
 
+    
 
 def train_models(X_train, X_test, y_train, y_test):
     """
@@ -204,6 +206,49 @@ def train_models(X_train, X_test, y_train, y_test):
 
     logging.info("Models trained and saved")
 
+    plot_roc_curve(
+    {
+        "Logistic Regression": lrc,
+        "Random Forest": rfc
+    },
+    X_test,
+    y_test
+    )
+
+
+def plot_roc_curve(models, X_test, y_test):
+    """
+    plots ROC curves for multiple models
+
+    input:
+        models: dict of trained models
+        X_test: test features
+        y_test: test labels
+    output:
+        None (saves plot)
+    """
+    import os
+    os.makedirs('./images/results', exist_ok=True)
+
+    plt.figure(figsize=(8, 6))
+
+    for name, model in models.items():
+        y_probs = model.predict_proba(X_test)[:, 1]
+
+        fpr, tpr, _ = roc_curve(y_test, y_probs)
+        roc_auc = auc(fpr, tpr)
+
+        plt.plot(fpr, tpr, label=f"{name} (AUC = {roc_auc:.2f})")
+
+    plt.plot([0, 1], [0, 1], linestyle='--')
+
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve")
+    plt.legend(loc="lower right")
+
+    plt.savefig('./images/results/roc_curve.png')
+    plt.close()
 
 if __name__ == "__main__":
     df = import_data("./data/bank_data.csv")
